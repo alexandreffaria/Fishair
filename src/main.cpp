@@ -11,7 +11,7 @@
 // 1.0  = Walking
 // 10.0 = Running
 // 100.0 = Instant/Blur
-#define WALK_SPEED  0.1    
+#define WALK_SPEED  10
 
 #define SCREEN_TIMEOUT 10000  
 #define BUTTON_PIN 3          
@@ -51,7 +51,6 @@ void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   Wire.begin(SDA_PIN, SCL_PIN);
-  Wire.setClock(400000); // Keep the turbo clock!
   
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { for(;;); }
   
@@ -126,14 +125,30 @@ void loop() {
   }
 
   // --- 4. MODE: WALKER (Now using Logical Speed) ---
-  else {
-    // We use the calculated 'stepDelay' here
+else {
     if (millis() - lastWalkUpdate > stepDelay) {
       lastWalkUpdate = millis();
 
-      walkerX += random(-1, 2); 
-      walkerY += random(-1, 2);
+      // 1. Pick a random direction (-1, 0, or 1)
+      int stepX = random(-1, 2);
+      int stepY = random(-1, 2);
 
+      // 2. Check X Bounce
+      // If we are at the edge AND trying to move out, flip the step!
+      if ((walkerX <= 0 && stepX == -1) || (walkerX >= SCREEN_WIDTH - 1 && stepX == 1)) {
+        stepX = -stepX; // Bounce!
+      }
+
+      // 3. Check Y Bounce
+      if ((walkerY <= 0 && stepY == -1) || (walkerY >= SCREEN_HEIGHT - 1 && stepY == 1)) {
+        stepY = -stepY; // Bounce!
+      }
+
+      // 4. Move
+      walkerX += stepX;
+      walkerY += stepY;
+
+      // (Optional) Keep constrain just as a safety net, though the bounce logic handles it
       walkerX = constrain(walkerX, 0, SCREEN_WIDTH - 1);
       walkerY = constrain(walkerY, 0, SCREEN_HEIGHT - 1);
 
